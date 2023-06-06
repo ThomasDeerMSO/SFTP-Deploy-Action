@@ -40,6 +40,12 @@ printf "%s" "$4" > "$TEMP_SSH_PRIVATE_KEY_FILE"
 # avoid Permissions too open
 chmod 600 "$TEMP_SSH_PRIVATE_KEY_FILE"
 
+# Install rsync if not already available
+if ! command -v rsync >/dev/null 2>&1; then
+    echo 'Installing rsync...'
+    apk add rsync
+fi
+
 # delete remote files if needed
 if test $9 == "true"; then
 	echo 'Start delete remote files'
