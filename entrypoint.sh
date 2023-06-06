@@ -4,7 +4,6 @@
 set -eu
 
 TEMP_SSH_PRIVATE_KEY_FILE='../private_key.pem'
-TEMP_SFTP_FILE='../sftp'
 
 # make sure remote path is not empty
 if [ -z "$6" ]; then
@@ -17,7 +16,7 @@ if [ -n "${10}" ]; then
 	echo 'use sshpass'
 	apk add sshpass
 
-	if test $9 == "true";then
+	if test $9 == "true"; then
   		echo 'Start delete remote files'
 		sshpass -p "${10}" ssh -o StrictHostKeyChecking=no -p "$3" "$1@$2" rm -rf "$6"
 	fi
@@ -28,11 +27,8 @@ if [ -n "${10}" ]; then
  	 	sshpass -p "${10}" ssh -o StrictHostKeyChecking=no -p "$3" "$1@$2" mkdir -p "$6"
 	fi
 
-	echo 'SFTP Start'
-	# create a temporary file containing sftp commands
-	printf "%s" "put -r -d $5 $6" > "$TEMP_SFTP_FILE"
-	#-o StrictHostKeyChecking=no avoid Host key verification failed.
-	SSHPASS="${10}" sshpass -e sftp -oBatchMode=no -b "$TEMP_SFTP_FILE" -P "$3" "$8" -o StrictHostKeyChecking=no "$1@$2"
+	echo 'Rsync Start'
+	rsync -avz --delete -e "ssh -p $3" "$5" "$1@$2:$6"
 
 	echo 'Deploy Success'
 
@@ -45,7 +41,7 @@ printf "%s" "$4" > "$TEMP_SSH_PRIVATE_KEY_FILE"
 chmod 600 "$TEMP_SSH_PRIVATE_KEY_FILE"
 
 # delete remote files if needed
-if test $9 == "true";then
+if test $9 == "true"; then
 	echo 'Start delete remote files'
 	ssh -o StrictHostKeyChecking=no -p "$3" -i "$TEMP_SSH_PRIVATE_KEY_FILE" "$1@$2" rm -rf "$6"
 fi
@@ -57,11 +53,8 @@ else
 	ssh -o StrictHostKeyChecking=no -p "$3" -i "$TEMP_SSH_PRIVATE_KEY_FILE" "$1@$2" mkdir -p "$6"
 fi
 
-echo 'SFTP Start'
-# create a temporary file containing sftp commands
-printf "%s" "put -r -d $5 $6" > "$TEMP_SFTP_FILE"
-#-o StrictHostKeyChecking=no avoid Host key verification failed.
-sftp -b "$TEMP_SFTP_FILE" -P "$3" "$8" -o StrictHostKeyChecking=no -i "$TEMP_SSH_PRIVATE_KEY_FILE" "$1@$2"
+echo 'Rsync Start'
+rsync -avz --delete -e "ssh -p $3 -i $TEMP_SSH_PRIVATE_KEY_FILE" "$5" "$1@$2:$6"
 
 echo 'Deploy Success'
 exit 0
